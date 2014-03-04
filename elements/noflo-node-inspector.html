@@ -228,17 +228,25 @@
             <template if="{{ port.type == 'bang' }}">
               <button name="{{ port.name }}" on-click="{{ sendBang }}"><i class="fa fa-bolt"></i></button>
             </template>
-            <template if="{{ port.type == 'boolean' }}">
+            <template if="{{ port.conversionType == 'boolean' }}">
               <input type="checkbox" name="{{ port.name }}" checked="{{ port.value }}" data-type="{{ port.type }}" on-change="{{ updateValue }}">
             </template>
-            <template if="{{ port.type != 'bang' && port.type != 'boolean' }}">
-              <template if="{{ port.inputType == 'number' }}">
+            <template if="{{ port.type != 'bang' && port.conversionType != 'boolean' }}">
+              <template if="{{ port.conversionType == 'number' }}">
                 <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="0.01" data-type="{{ port.type }}" on-changed="{{updateValue}}">#</number-scrubber>
               </template>
               <input type="{{ port.inputType }}" name="{{ port.name }}" value="{{ port.value }}" data-type="{{ port.type }}" on-blur="{{ updateValue }}">
             </template>
             <template if="{{ port.type != 'bang' && port.value != undefined }}">
               <button class="remove-value" data-port="{{ port.name }}" on-click="{{ removeValue }}"><i class="fa fa-ban"></i></button>
+            </template>
+            <template if="{{ port.type == 'all' }}">
+              <select name="{{ port.name }}" value="{{ port.conversionType }}" data-type="{{ port.type }}" on-change="{{ updateConversion }}">
+                <option value="string">String</option>
+                <option value="boolean">Boolean</option>
+                <option value="number">Number</option>
+                <option value="object">Object</option>
+              </select>
             </template>
           </template>
           <template if="{{ !port.showInput }}">
@@ -331,34 +339,50 @@
           case 'array':
             portDef.value = JSON.stringify(value);
             portDef.inputType = 'text';
+            portDef.conversionType = 'object';
             break;
+          case 'number':
           case 'int':
             portDef.inputType = 'number';
+            portDef.conversionType = 'number';
+            break;
+          case 'boolean':
+            portDef.inputType = 'boolean';
+            portDef.conversionType = 'boolean';
             break;
           case 'all':
-            portDef.inputType = 'text';
+            switch (typeof value) {
+            case 'object':
+              portDef.inputType = 'text';
+              portDef.conversionType = 'object';
+              portDef.value = JSON.stringify(value);
+              break;
+            case 'string':
+              portDef.inputType = 'text';
+              portDef.conversionType = 'string';
+              break;
+            case 'number':
+            case 'int':
+              portDef.inputType = 'number';
+              portDef.conversionType = 'number';
+              break;
+            case 'boolean':
+              portDef.inputType = 'boolean';
+              portDef.conversionType = 'boolean';
+              break;
+            }
             break;
         }
         return portDef;
       },
       inputToPort: function (input) {
-        var dataType = input.getAttribute('data-type');
-        switch (dataType) {
-          case 'object':
-          case 'array':
-            try {
-              return JSON.parse(input.value);
-            } catch (e) {
-              return input.value;
-            }
-            break;
-          case 'boolean':
-            return input.checked;
-        case 'number':
-            return parseFloat(input.value);
-          default:
-            return input.value;
-        }
+        var name = input.getAttribute('name');
+        var port = this.getPortFromName(name);
+        var inputValue = this.extractValueFromInput(port, input);
+        console.log('inputValue=' + inputValue + '(' + (typeof inputValue) + ')');
+        var value = this.convertPortValue(port, inputValue);
+        console.log('value=' + value + '(' + (typeof value) + ')');
+        return value;
       },
       updatePorts: function () {
         this.inports = [];
@@ -370,34 +394,95 @@
           this.inports.push(portDef);
         }.bind(this));
       },
+      extractValueFromInput: function (port, input) {
+        switch (port.conversionType) {
+        case 'boolean':
+          return input.checked;
+        default:
+          return input.value;
+        }
+      },
+      convertPortValue: function (port, value) {
+        var type = port.conversionType !== undefined ?
+              port.conversionType : port.type;
+        switch (type) {
+        case 'object':
+        case 'array':
+          try {
+            return JSON.parse(value);
+          } catch (e) {
+            return value;
+          }
+          break;
+        case 'boolean':
+          return value;
+        case 'number':
+          return parseFloat(value);
+        }
+        return value;
+      },
+      validatePortValue: function (port, value) {
+        var type = port.conversionType !== undefined ?
+              port.conversionType : port.type;
+        switch (type) {
+        case 'object':
+          return (value instanceof Object);
+        case 'array':
+          return (value instanceof Array);
+        case 'number':
+          return typeof(value) === "number";
+        case 'boolean':
+          return typeof(value) === "boolean";
+        }
+        return true;
+      },
       updateValue: function (event, detail, sender) {
         event.preventDefault();
         if (!sender.value) {
           return;
         }
+        console.log('start UpdateValue');
         var value = this.inputToPort(sender);
         var name = sender.getAttribute('name');
         var port = this.getPortFromName(name);
 
-        var validatePortValue = function(type, value) {
-          switch (port.type) {
-            case 'object':
-              return value instanceof Object;
-            case 'array':
-              return value instanceof Array;
-          }
-          return true;
-        };
-
-        if (validatePortValue(port.type, value)) {
+        if (this.validatePortValue(port, value)) {
+          console.log('value=' + value + ' valid!');
+          port.cachedValue = value;
+          console.log(port.name + ' new cachedValue=' + port.cachedValue);
           this.graph.startTransaction('iipchange');
           this.graph.removeInitial(this.node.id, name);
           this.graph.addInitial(value, this.node.id, name);
           this.graph.endTransaction('iipchange');
           sender.parentNode.classList.remove('error');
         } else {
+          console.log('value=' + value + ' invalid!');
           sender.parentNode.classList.add('error');
         }
+        console.log('end UpdateValue');
+      },
+      updateConversion: function (event, detail, sender) {
+        event.preventDefault();
+        console.log('start UpdateConversion');
+        var name = sender.getAttribute('name');
+        var port = this.getPortFromName(name);
+        port.conversionType = sender.value;
+        console.log('cachedValue=' + port.cachedValue + '(' + (typeof port.cachedValue) + ')');
+        var value = this.convertPortValue(port, port.cachedValue);
+        console.log('value=' + value + '(' + (typeof value) + ')');
+
+        if (this.validatePortValue(port, value)) {
+          console.log('value=' + value + ' valid!');
+          this.graph.startTransaction('iipchange');
+          this.graph.removeInitial(this.node.id, name);
+          this.graph.addInitial(value, this.node.id, name);
+          this.graph.endTransaction('iipchange');
+          sender.parentNode.classList.remove('error');
+        } else {
+          console.log('value=' + value + ' invalid!');
+          sender.parentNode.classList.add('error');
+        }
+        console.log('end UpdateConversion');
       },
       removeValue: function (event, detail, sender) {
         event.preventDefault();
