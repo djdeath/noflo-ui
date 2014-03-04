@@ -259,6 +259,14 @@
         // Every NoFlo UI instance should have at least the local IFRAME runtime available
         var hasIframeRuntime = false;
         var runtime = new this.registry.Runtime({
+          label: 'GNOME NoFlo environment',
+          id: require('uuid')(),
+          protocol: 'websocket',
+          address: 'ws://localhost:1081',
+          type: 'noflo-gnome'
+        });
+        this.userRuntimes.push(runtime.runtime);
+        runtime = new this.registry.Runtime({
           label: 'Local NoFlo HTML5 environment',
           id: require('uuid')(),
           protocol: 'iframe',
