@@ -441,6 +441,16 @@
         }
         this.fire('runtimes', this.userRuntimes);
       },
+      localruntime: function (runtimeDescription) {
+        if (runtimeDescription.protocol === 'iframe') {
+          return;
+        }
+        var runtime = new this.registry.Runtime(runtimeDescription, {
+          host: this.registryUrl
+        });
+        this.userRuntimes.push(runtime.runtime);
+        this.fire('runtimes', this.userRuntimes);
+      },
       fetchFlowhub: function (event) {
         if (event) {
           event.preventDefault();

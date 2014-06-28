@@ -15,14 +15,14 @@
     <script src="bower_components/hammerjs/hammer.js"></script>
     <script src="bower_components/react/react.js"></script>
     <script src="browser/noflo-noflo-indexeddb/vendor/IndexedDBShim.min.js"></script>
-    
+
     <link rel="import" href="bower_components/the-graph/the-graph-editor/the-graph-editor.html">
     <noflo-polymer name="the-graph-editor" inports="graph library theme width height" outports="edges nodes"></noflo-polymer>
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
     <noflo-polymer name="noflo-context" inports="runtimes project graphs component editor search clear getpanel nodes edges runtime" outports="project graphs currentgraph component example newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
-    <noflo-polymer name="noflo-main" inports="open projects graphs components runtimes route token preparedefaults createdproject" outports="newproject project graph component download githubtoken projects runtimes runtime theme"></noflo-polymer>
+    <noflo-polymer name="noflo-main" inports="open projects graphs components localruntime runtimes route token preparedefaults createdproject" outports="newproject project graph component download githubtoken projects runtimes runtime theme"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
     <noflo-polymer name="noflo-runtime" inports="graphs edges panel runtimes runtime" outports="runtime changed"></noflo-polymer>
     <link rel="import" href="elements/noflo-packets.html">
@@ -685,6 +685,7 @@
       'false' -> DATA HideMain(core/Kick) OUT -> OPEN Main
       Router MAIN -> IN ShowMain
       Router ROUTE -> IN HideMain
+      Router RUNTIME -> LOCALRUNTIME Main
 
       # Routing
       LoadData COMPLETE -> START ListenHash(interaction/ListenHash)

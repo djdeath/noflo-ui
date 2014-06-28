@@ -14,9 +14,17 @@ class Router extends noflo.Component
       missed:
         datatype: 'string'
         required: false
+      runtime:
+        datatype: 'object'
+        required: false
 
     @inPorts.url.on 'data', (url) =>
-      matched = @matchUrl url
+      args = @matchArguments url
+      if args.runtime
+        @outPorts.runtime.send args.runtime
+        @outPorts.runtime.disconnect()
+
+      matched = @matchPath url
       unless matched
         @outPorts.missed.send url
         @outPorts.missed.disconnect()
@@ -29,7 +37,23 @@ class Router extends noflo.Component
         @outPorts.main.send true
         @outPorts.main.disconnect()
 
-  matchUrl: (url) ->
+  getUrlVars: (url) ->
+    vars = {}
+    hashes = url.slice(url.indexOf('?') + 1).split('&')
+    for hash in hashes
+      kv = hash.split('=')
+      vars[kv[0]] = kv[1];
+    vars
+
+  matchArguments: (url) ->
+    args = {}
+    try
+      runtimeDefinition = atob @getUrlVars(url).runtime
+      args.runtime = JSON.parse runtimeDefinition
+    catch e
+    args
+
+  matchPath: (url) ->
     routeData =
       route: ''
     if url is ''
