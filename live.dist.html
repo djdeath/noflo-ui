@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <title>$NOFLO_APP_TITLE v$NOFLO_APP_VERSION</title>
+    <link rel="shortcut icon" href="$NOFLO_THEME.ico" />
+    <link href="https://github.com/noflo/noflo-ui" rel="source" />
+    <meta name="description" content="$NOFLO_APP_DESCRIPTION">
+
+    <script src="bower_components/platform/platform.js"></script>
+    <link rel="import" href="bower_components/polymer/polymer.html">
+
+    <script src="bower_components/klay-js/klay.js"></script>
+    <script src="bower_components/hammerjs/hammer.js"></script>
+    <script src="bower_components/react/react.js"></script>
+    <script src="browser/noflo-noflo-indexeddb/vendor/IndexedDBShim.min.js"></script>
+
+    <link rel="import" href="bower_components/the-graph/the-graph-editor/the-graph-editor.html">
+    <noflo-polymer name="the-graph-editor" inports="graph library theme width height" outports="edges nodes"></noflo-polymer>
+    <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
+    <link rel="import" href="elements/noflo-context.html">
+    <noflo-polymer name="noflo-context" inports="runtimes project graphs component editor search clear getpanel nodes edges runtime" outports="project graphs currentgraph component example newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
+    <link rel="import" href="elements/noflo-runtime.html">
+    <noflo-polymer name="noflo-runtime" inports="graphs edges panel runtimes runtime" outports="runtime changed"></noflo-polymer>
+    <link rel="import" href="elements/noflo-packets.html">
+    <noflo-polymer name="noflo-packets" inports="runtime currentgraph edges packet panel" outports=""></noflo-polymer>
+    <link rel="import" href="elements/noflo-search.html">
+    <noflo-polymer name="noflo-search" inports="toggle results runtimes project graphs component panel" outports="menu search"></noflo-polymer>
+    <link rel="import" href="elements/noflo-library.html">
+    <noflo-polymer name="noflo-library" inports="editor project graphs search" outports="result"></noflo-polymer>
+    <link rel="import" href="elements/noflo-project.html">
+    <noflo-polymer name="noflo-project" inports="project runtimes runtime graphs components githubtoken graphs component" outports="newgraph newcomponent changed upload"></noflo-polymer>
+    <link rel="import" href="elements/noflo-component-editor.html">
+    <noflo-polymer name="noflo-component-editor" inports="component graphs theme width height" outports="changed"></noflo-polymer>
+    <link rel="import" href="elements/noflo-journal.html">
+    <noflo-polymer name="noflo-journal" inports="db graph editor panel undo redo" outports=""></noflo-polymer>
+    <link rel="import" href="elements/noflo-help.html">
+    <script src="./browser/noflo-ui.js"></script>
+
+    <link rel="stylesheet" href="./css/font-awesome-shadow.css" shim-shadowdom>
+    <link rel="stylesheet" href="./css/noflo-ui.css">
+    <link rel="stylesheet" href="./css/noflo-ui-shadow.css" shim-shadowdom>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no">
+    <link rel="apple-touch-icon" href="app/$NOFLO_THEME-60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="app/$NOFLO_THEME-120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="app/$NOFLO_THEME-144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="app/$NOFLO_THEME-152.png">
+  </head>
+  <body class="$NOFLO_THEME loading">
+    <!-- $NOFLO_APP_ANALYTICS -->
+    <div id="loading">$NOFLO_APP_LOADING</div>
+    <a id="bugreport" href="https://github.com/noflo/noflo-ui/issues" title="Report a bug" target="_blank"><i class="fa fa-bug"></i></a>
+    <a id="openhelp" href="http://flowhub.io/documentation" title="Help" target="_blank"><i class="fa fa-question"></i></a>
+    <noflo-help></noflo-help>
+    <main id="container">
+      <the-graph-editor></the-graph-editor>
+      <noflo-library></noflo-library>
+      <noflo-context></noflo-context>
+      <noflo-runtime></noflo-runtime>
+      <noflo-journal></noflo-journal>
+      <noflo-component-editor></noflo-component-editor>
+      <noflo-search></noflo-search>
+      <noflo-project></noflo-project>
+      <noflo-packets></noflo-packets>
+    </main>
+    <script type="application/fbp" id="EnsureId">
+      INPORT=Item.IN:IN
+      OUTPORT=SetId.OUT:OUT
+      'id' -> PROPERTY SetId(objects/SetPropertyValue)
+      Item(core/Repeat) OUT -> START Generate(ui/GenerateId)
+      Generate OUT -> VALUE SetId
+      Item OUT -> IN SetId
+    </script>
+    <script type="application/fbp" id="ProjectContext">
+      INPORT=Context.PROJECT:PROJECT
+      INPORT=Context.GRAPHS:GRAPHS
+      INPORT=Context.COMPONENT:COMPONENT
+      INPORT=Runtimes.IN:RUNTIMES
+      INPORT=Runtime.IN:RUNTIME
+      INPORT=Context.CLEAR:CLEAR
+      INPORT=Project.GITHUBTOKEN:GITHUBTOKEN
+      INPORT=Journal.DB:DB
+      INPORT=Theme.IN:THEME
+      OUTPORT=ListenGraph.OUT:GRAPHCHANGED
+      OUTPORT=ComponentEditor.CHANGED:COMPONENTCHANGED
+      OUTPORT=MergeNewGraph.OUT:NEWGRAPH
+      OUTPORT=Project.NEWCOMPONENT:NEWCOMPONENT
+      OUTPORT=Project.CHANGED:PROJECTCHANGED
+      OUTPORT=Runtime.OUT:RUNTIME
+      OUTPORT=Project.UPLOAD:UPLOAD
+      OUTPORT=Context.EDGES:EDGES
+      OUTPORT=Context.GRAPHS:GRAPHS
+      OUTPORT=Context.TOOLPANEL:PANEL
+      'noflo-context' -> SELECTOR Context(polymer/noflo-context)
+
+      # Runtime handling
+      Runtime(core/Split) OUT -> RUNTIME Context
+      Runtimes(core/Split) OUT -> RUNTIMES Context
+      Runtime OUT -> RUNTIME Context
+
+      # Search handling
+      'noflo-search' -> SELECTOR Search(polymer/noflo-search)
+      Runtimes OUT -> RUNTIMES Search
+      Context GRAPHS -> GRAPHS Search
+      Context COMPONENT -> COMPONENT Search
+      Context PROJECT -> PROJECT Search
+
+      's' -> KEYS Shortcuts(interaction/ListenKeyboardShortcuts)
+      Shortcuts SHORTCUT -> TOGGLE Search
+
+      # Journal history handling
+      'noflo-journal' -> SELECTOR Journal(polymer/noflo-journal)
+      Context CURRENTGRAPH -> GRAPH Journal
+      #'z' -> KEYS Shortcuts
+      #Shortcuts SHORTCUT -> UNDO Journal
+      #'r' -> KEYS Shortcuts
+      #Shortcuts SHORTCUT -> REDO Journal
+
+      # Panel handling
+      'noflo-packets' -> SELECTOR Packets(polymer/noflo-packets)
+      '' -> GETPANEL Context
+      Context CONTEXTPANEL -> PANEL Search
+      Context CONTEXTPANEL -> PANEL Packets
+
+      # Library handling
+      'noflo-library' -> SELECTOR Library(polymer/noflo-library)
+      Context PROJECT -> PROJECT Library
+      Context GRAPHS -> GRAPHS Library
+
+      # UI searching
+      Search SEARCH -> SEARCH Library RESULT -> RESULTS Search
+      Search SEARCH -> SEARCH Context RESULT -> RESULTS Search
+
+      # Project menu
+      'noflo-project' -> SELECTOR Project(polymer/noflo-project)
+      Runtimes OUT -> RUNTIMES Project
+      Runtime OUT -> RUNTIME Project
+      Context PROJECT -> PROJECT Project
+      Context GRAPHS -> GRAPHS Project
+      Context COMPONENT -> COMPONENT Project
+      Project NEWGRAPH -> IN MergeNewGraph(core/Merge)
+      Context NEWGRAPH -> IN MergeNewGraph
+
+      # Prepare graph editor
+      Context CURRENTGRAPH -> CURRENTGRAPH GraphEditor(local/GraphEditor)
+      Theme(core/Repeat) OUT -> THEME GraphEditor
+      Runtime OUT -> RUNTIME GraphEditor
+      Context NEWGRAPH -> NEWGRAPH GraphEditor
+      GraphEditor EDITOR -> EDITOR Library
+      GraphEditor EDITOR -> EDITOR Context
+      GraphEditor EDGES -> EDGES Context
+      GraphEditor NODES -> NODES Context
+      GraphEditor EDITOR -> EDITOR Journal
+
+
+      # Prepare component editor
+      'noflo-component-editor' -> SELECTOR ComponentEditor(polymer/noflo-component-editor)
+      Context COMPONENT -> COMPONENT ComponentEditor
+      Theme OUT -> THEME ComponentEditor
+
+      # Listen for graph changes
+      Context CURRENTGRAPH -> IN ListenGraph(graph/ListenChanges)
+      Runtime OUT -> RUNTIME SendGraphChanges(runtime/SendGraphChanges)
+      Context CURRENTGRAPH -> GRAPH SendGraphChanges
+
+      # Listen for network packets
+      Context EDGES -> EDGES Packets
+      Runtime OUT -> RUNTIME Packets
+      GraphEditor PACKET -> PACKET Packets
+      Context CURRENTGRAPH -> CURRENTGRAPH Packets
+
+      # Listen for screen size changes and communicate with editors
+      '' -> START ListenWindow(interaction/ListenResize)
+      ListenWindow WIDTH -> WIDTH GraphEditor
+      ListenWindow HEIGHT -> HEIGHT GraphEditor
+      ListenWindow WIDTH -> WIDTH ComponentEditor
+      ListenWindow HEIGHT -> HEIGHT ComponentEditor
+    </script>
+    <script type="application/fbp" id="GraphEditor">
+      INPORT=ConnectRuntime.RUNTIME:RUNTIME
+      INPORT=ConnectRuntime.PROJECT:PROJECT
+      INPORT=ConnectRuntime.NEWGRAPH:NEWGRAPH
+      INPORT=Graph.IN:CURRENTGRAPH
+      INPORT=GraphEditor.WIDTH:WIDTH
+      INPORT=GraphEditor.HEIGHT:HEIGHT
+      INPORT=GraphEditor.THEME:THEME
+      OUTPORT=Async.OUT:EDITOR
+      OUTPORT=ConnectRuntime.PACKET:PACKET
+      OUTPORT=GraphEditor.EDGES:EDGES
+      OUTPORT=GraphEditor.NODES:NODES
+      OUTPORT=ConnectRuntime.RUNTIME:RUNTIMECHANGED
+      'the-graph-editor' -> SELECTOR GraphEditor(polymer/the-graph-editor)
+      Graph(core/Repeat) OUT -> START EmptyLibrary(objects/CreateObject)
+      EmptyLibrary OUT -> LIBRARY GraphEditor
+      Graph(core/Repeat) OUT -> GRAPH GraphEditor
+      GraphEditor ELEMENT -> IN Async(core/RepeatAsync)
+      Async OUT -> EDITOR ConnectRuntime(ui/ConnectRuntime)
+    </script>
+    <script type="application/fbp" id="HandleUrl">
+      INPORT=ListenHash.START:KICK
+      OUTPORT=Runtime.OUT:RUNTIMEDEF
+      OUTPORT=Runtimes.OUT:RUNTIMES
+      OUTPORT=Project.OUT:PROJECT
+      OUTPORT=Router.ROUTE:ROUTE
+
+      ListenHash(interaction/ListenHash) INITIAL -> URL Router(ui/Router)
+      ListenHash CHANGE -> URL Router
+
+      Router PROJECT -> IN Project(local/EnsureId)
+      Router RUNTIME -> IN PreRuntime(local/EnsureId)
+
+      PreRuntime OUT -> IN Runtimes(adapters/PacketsToArray)
+      PreRuntime OUT -> IN Runtime(core/RepeatAsync)
+    </script>
+    <script type="application/fbp" id="HandleRuntime">
+      INPORT=RuntimeDef.IN:RUNTIMEDEF
+      INPORT=RuntimeElement.GRAPHS:GRAPHS
+      INPORT=RuntimeElement.EDGES:EDGES
+      INPORT=RuntimeElement.PANEL:PANEL
+      INPORT=RuntimeElement.RUNTIMES:RUNTIMES
+      INPORT=UseRuntime.START:READY
+      OUTPORT=Runtime.OUT:RUNTIME
+      OUTPORT=RuntimeElement.CHANGED:CHANGED
+
+      RuntimeDef(core/Repeat) OUT -> IN Runtimes(adapters/PacketsToArray)
+
+      'noflo-runtime' -> SELECTOR RuntimeElement(polymer/noflo-runtime)
+      'body' -> SELECTOR GetParent(dom/GetElement) ELEMENT -> ELEMENT Connect(runtime/ConnectRuntime)
+      '250' -> TIME UseRuntime(core/RunTimeout)
+      UseRuntime OUT -> IN UseRuntime2(core/Kick)
+      Connect RUNTIME -> IN Runtime(core/Split)
+      Connect RUNTIME -> DATA UseRuntime2(core/Kick) OUT -> RUNTIME RuntimeElement
+      RuntimeElement RUNTIME -> DEFINITION Connect
+      RuntimeDef OUT -> DEFINITION Connect
+    </script>
+    <script type="application/fbp" id="HandleGraphs">
+      INPORT=ListGraphs.RUNTIME:RUNTIME
+      OUTPORT=Graphs.OUT:GRAPHS
+
+      'true' -> AUTO ListGraphs(runtime/ListGraphs)
+      ListGraphs GRAPHS -> IN Values(objects/Values) OUT -> IN LoadJson(graph/LoadJson)
+      LoadJson OUT -> IN Graphs(adapters/PacketsToArray)
+    </script>
+    <script type="application/fbp" id="SetGraphsOnProject">
+      INPORT=SetKeyValue.IN:PROJECT
+      INPORT=SetKeyValue.VALUE:GRAPHS
+      OUTPORT=SetKeyValue.OUT:PROJECT
+
+      'graphs' -> PROPERTY SetKeyValue(objects/SetPropertyValue)
+    </script>
+    <script type="application/fbp" id="main">
+      # Listen to runtime's graphs
+      'true' -> IN KickAsync(core/RepeatAsync) OUT -> KICK HandleUrl(local/HandleUrl)
+      HandleUrl RUNTIMEDEF -> RUNTIMEDEF HandleRuntime(local/HandleRuntime)
+
+      HandleRuntime RUNTIME -> RUNTIME HandleGraphs(local/HandleGraphs)
+
+      # Hide the editor initially
+      'true' -> START NoComponent(objects/CreateObject) OUT -> COMPONENT Context(local/ProjectContext)
+
+      # Prepare the context
+      HandleUrl ROUTE -> CLEAR Context
+      HandleUrl RUNTIMES -> RUNTIMES Context
+      HandleUrl PROJECT -> PROJECT PrepareProject(local/SetGraphsOnProject) PROJECT -> PROJECT Context
+      HandleGraphs GRAPHS -> GRAPHS PrepareProject
+
+      HandleGraphs GRAPHS -> GRAPHS Context
+
+      # Resend runtime (kludge to fix assumption)
+      PrepareProject PROJECT -> IN RuntimeAsync(core/Kick)
+      PrepareProject PROJECT -> READY HandleRuntime
+      HandleRuntime RUNTIME -> DATA RuntimeAsync
+      RuntimeAsync OUT -> RUNTIME Context
+
+      Context PANEL -> PANEL HandleRuntime
+      Context EDGES -> EDGES HandleRuntime
+      Context GRAPHS -> GRAPHS HandleRuntime
+    </script>
+    <script src="app/noflo.js"></script>
+  </body>
+</html>

@@ -14,6 +14,8 @@ index.html
 index.js
 dev.html
 dist.sh
+live.html
+live.js
 manifest.json
 manifest.webapp
 config.xml

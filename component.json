@@ -26,6 +26,7 @@
     "noflo/noflo-github": "*",
     "noflo/noflo-graph": "*",
     "noflo/noflo-runtime": "*",
+    "noflo/noflo-adapters": "*",
     "the-grid/flowhub-registry": "*",
     "gjohnson/uuid": "*"
   },

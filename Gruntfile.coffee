@@ -32,6 +32,7 @@ module.exports = ->
           csp: true
         files:
           'index.html': 'index.dist.html'
+          'live.html': 'live.dist.html'
 
     # CoffeeScript compilation of tests
     coffee:
@@ -77,6 +78,8 @@ module.exports = ->
           './index.html': './index.html'
           './index.js': './index.js'
           './config.xml': './config.dist.xml'
+          './live.html': './live.html'
+          './live.js': './live.js'
           './manifest.json': './manifest.dist.json'
           './manifest.webapp': './manifest.dist.webapp'
         options:
@@ -178,6 +181,14 @@ module.exports = ->
           dest: '/'
         ,
           src: ['index.html']
+          expand: true
+          dest: '/'
+        ,
+          src: ['live.html']
+          expand: true
+          dest: '/'
+        ,
+          src: ['live.js']
           expand: true
           dest: '/'
         ,
@@ -336,4 +347,3 @@ module.exports = ->
   @registerTask 'default', ['test']
   @registerTask 'pages', ['build', 'clean:dist', 'unzip', 'string-replace:analytics', 'gh-pages']
   @registerTask 'devp', ['noflo_browser:preview', 'connect:server', 'watch:preview']
-

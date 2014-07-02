@@ -14,6 +14,9 @@ class Router extends noflo.Component
       missed:
         datatype: 'string'
         required: false
+      project:
+        datatype: 'object'
+        required: false
       runtime:
         datatype: 'object'
         required: false
@@ -21,8 +24,15 @@ class Router extends noflo.Component
     @inPorts.url.on 'data', (url) =>
       args = @matchArguments url
       if args.runtime
+        console.log 'Runtime:'
+        console.log args.runtime
         @outPorts.runtime.send args.runtime
         @outPorts.runtime.disconnect()
+      if args.project
+        console.log 'Project:'
+        console.log args.project
+        @outPorts.project.send args.project
+        @outPorts.project.disconnect()
 
       matched = @matchPath url
       unless matched
@@ -47,10 +57,19 @@ class Router extends noflo.Component
 
   matchArguments: (url) ->
     args = {}
+    vars = @getUrlVars(url)
+
+    # Runtime specification
+    runtime = vars.runtime
     try
-      runtimeDefinition = atob @getUrlVars(url).runtime
-      args.runtime = JSON.parse runtimeDefinition
+      args.runtime = JSON.parse atob decodeURIComponent runtime
     catch e
+    # Project specification
+    project = vars.project
+    try
+      args.project = JSON.parse atob decodeURIComponent project
+    catch e
+
     args
 
   matchPath: (url) ->
