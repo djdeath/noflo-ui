@@ -30,6 +30,7 @@ class ConnectRuntime extends noflo.Component
         @outPorts.editor.disconnect()
     @inPorts.project.on 'data', (@project) =>
       @example = null
+      @sendProject @runtime, @project
     @inPorts.newgraph.on 'data', (data) =>
       @sendGraph @runtime, data
     @inPorts.example.on 'data', (@example) =>
@@ -43,6 +44,7 @@ class ConnectRuntime extends noflo.Component
       @connect @editor, @runtime
 
   sendProject: (runtime, project) ->
+    return unless runtime and runtime.status.online
     if project.components
       for component in project.components
         @sendComponent runtime, component
@@ -51,7 +53,7 @@ class ConnectRuntime extends noflo.Component
         @sendGraph runtime, graph
 
   sendComponent: (runtime, component) ->
-    return unless component.code
+    return unless runtime and runtime.status.online and component.code
 
     # Check for platform-specific components
     runtimeType = component.code.match /@runtime ([a-z\-]+)/
@@ -66,6 +68,7 @@ class ConnectRuntime extends noflo.Component
       tests: component.tests
 
   sendGraph: (runtime, graph) ->
+    return unless runtime and runtime.status.online
     if graph.properties.environment?.type
       if graph.properties.environment.type isnt 'all' and graph.properties.environment.type isnt @runtime.definition.type
         return
@@ -150,9 +153,11 @@ class ConnectRuntime extends noflo.Component
   connect: (editor, runtime) ->
     return unless editor and runtime
     @connected = false
-    runtime.once 'connected', =>
-      for name, def of editor.$.graph.library
-        delete editor.$.graph.library[name]
+    if runtime.status.online
+      @onRuntimeConnectedOnce()
+      @onRuntimeConnected()
+    else
+      runtime.once 'connected', @onRuntimeConnectedOnce
     runtime.on 'connected', @onRuntimeConnected
     runtime.on 'disconnected', @onRuntimeDisconnected
     runtime.on 'component', @onRuntimeComponent
@@ -168,6 +173,10 @@ class ConnectRuntime extends noflo.Component
     @runtime.removeListener 'network', @onRuntimeNetwork
     @runtime.removeListener 'runtime', @onRuntimeRuntime
     @runtime.removeListener 'icon', @onRuntimeIcon
+
+  onRuntimeConnectedOnce: =>
+    for name, def of @editor.$.graph.library
+      delete @editor.$.graph.library[name]
 
   onRuntimeConnected: =>
     @connected = true
