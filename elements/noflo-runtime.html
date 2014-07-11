@@ -133,12 +133,17 @@
       edges: null,
       wasConnected: false,
       graphsChanged: function () {
+          console.log('runtime: graphs changed! prev=' +
+                      (this.currentGraph ? this.currentGraph.name : 'none'));
         if (!this.graphs || this.graphs.length === 0) {
           this.currentGraph = null;
           return;
         }
         // Use the top-level graph as the runtime main graph
         this.currentGraph = this.graphs[0];
+          console.log('runtime: graphs changed! prev=' +
+                      this.currentGraph.name);
+        this._currentGraphChanged();
       },
       edgesChanged: function () {
         this.sendEdges();
@@ -171,13 +176,15 @@
             this.fire('runtime', this.runtimes[i]);
           }
         }
+          console.log('runtime: clearRuntime!');
         this.runtime = null;
-        this.currentGraphChanged();
+        this._currentGraphChanged();
       },
-      currentGraphChanged: function () {
+      _currentGraphChanged: function () {
         this.wasConnected = false;
         if (this.runtime) {
-          this.stop();
+          console.log('runtime: currentGraphChanged!');
+          try { this.stop(); } catch (e) {}
           this.execution.running = false;
           this.execution.stopped = true;
           this.runtime = null;
@@ -201,8 +208,9 @@
 
         // Subscribe to possible type changes
         this.currentGraph.on('changeProperties', function (newProps, oldProps) {
+              console.log('runtime: changed graph properties');
           if (newProps.environment.type !== oldProps.environment.type) {
-            this.currentGraphChanged();
+            this._currentGraphChanged();
           }
         }.bind(this));
 
@@ -223,7 +231,23 @@
         }
         return;
       },
+      runtimeStatusChanged: function(status) {
+         console.log('runtime: runtimeStatusChanged');
+          console.log(status);
+        this.online = status.online;
+        if (!this.online) {
+          this.hideCard();
+          this.execution.running = false;
+          this.execution.label = 'not started';
+          if (this.panel) {
+            this.panel.open = false;
+          }
+        }
+        this.runtime.sendNetwork('list', {});
+      },
       runtimeChanged: function () {
+          console.log('runtime: runtimeChanged');
+          console.log(this.runtime);
         this.online = false;
         this.execution.running = false;
         this.execution.label = 'not started';
@@ -232,18 +256,10 @@
         if (!this.runtime) {
           return;
         }
+          console.log('runtime: setting main!');
+          console.log(this.currentGraph);
         this.runtime.setMain(this.currentGraph);
-        this.runtime.on('status', function (status) {
-          this.online = status.online;
-          if (!this.online) {
-            this.hideCard();
-            this.execution.running = false;
-            this.execution.label = 'not started';
-            if (this.panel) {
-              this.panel.open = false;
-            }
-          }
-        }.bind(this));
+        this.runtime.on('status', this.runtimeStatusChanged.bind(this));
         this.runtime.on('execution', function (status) {
           if (status.running) {
             this.execution.running = true;
@@ -253,11 +269,22 @@
           this.execution.label = status.label;
         }.bind(this));
         this.runtime.on('network', function (message) {
+            console.log('runtime: network message:');
+            console.log(message);
           if (message.command === 'error') {
             this.notify('Error', message.payload.message);
             return;
+          } else if (message.command === 'network') {
+            if (message.payload.started) {
+              this.execution.running = true;
+              this.execution.label = 'stopped';
+            } else {
+              this.execution.running = false;
+              this.execution.label = 'not started';
+            }
           }
         }.bind(this));
+        this.runtimeStatusChanged(this.runtime.status);
       },
       updateGraphType: function (graph) {
         var type = 'noflo-browser';
