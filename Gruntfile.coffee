@@ -158,6 +158,8 @@ module.exports = ->
             'bower_components/polymer-gestures/src/*.js'
             'bower_components/hammerjs/hammer.js'
             'bower_components/react/*.js'
+            'bower_components/react.animate-djdeath/*.js'
+            'bower_components/ease-djdeath/*.js'
             'bower_components/requirejs/*.js'
             'bower_components/the-graph/**/*.js'
             'bower_components/the-graph/**/*.css'

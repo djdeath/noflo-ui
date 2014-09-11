@@ -114,6 +114,7 @@
         }
         this.editor.displaySelectionGroup = true;
         this.editor.selectedNodes = [ result, ];
+        this.editor.focusNode(result);
         this.fire('resultclick', result);
       }
     });
